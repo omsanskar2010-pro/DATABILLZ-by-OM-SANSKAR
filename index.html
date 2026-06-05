@@ -25,17 +25,6 @@
     th { background: #3498db; color: #fff; }
     td button { background: red; margin: 0; padding: 5px 10px; }
     td button:hover { background: darkred; }
-    @media (max-width: 600px) {
-      table, thead, tbody, th, td, tr { display: block; }
-      th { display: none; }
-      td { border: none; position: relative; padding-left: 50%; text-align: left; }
-      td:before { position: absolute; left: 10px; white-space: nowrap; font-weight: bold; }
-      td:nth-of-type(1):before { content: "Date"; }
-      td:nth-of-type(2):before { content: "Category"; }
-      td:nth-of-type(3):before { content: "Item"; }
-      td:nth-of-type(4):before { content: "Amount"; }
-      td:nth-of-type(5):before { content: "Action"; }
-    }
   </style>
 </head>
 <body>
@@ -175,3 +164,19 @@
       return date.toLocaleDateString("en-IN", { weekday: "long" });
     }
 
+    function viewSummary(type) {
+      let totals = {};
+      if (type === "daily") {
+        transactions.forEach(t => {
+          const dayName = getDayName(t.date);
+          const key = `${dayName}, ${t.date}`;
+          totals[key] = (totals[key] || 0) + t.amount;
+        });
+      } else if (type === "monthly") {
+        transactions.forEach(t => {
+          let month = t.date.slice(0,7);
+          totals[month] = (totals[month] || 0) + t.amount;
+        });
+      } else if (type === "yearly") {
+        transactions.forEach(t => {
+          let year = t.date.slice
