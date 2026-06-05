@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Databillz by OM SANSKAR — Billing System</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background: #f4f4f4; }
+    header { background: #2c3e50; color: #fff; padding: 15px; text-align: center; }
+    main { padding: 20px; max-width: 900px; margin: auto; }
+    h2 { color: #2c3e50; }
+    form { background: #fff; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+    label { display: block; margin-top: 10px; }
+    input, select { width: 100%; padding: 8px; margin-top: 5px; }
+    button { margin-top: 15px; padding: 10px 15px; background: #3498db; color: #fff; border: none; cursor: pointer; }
+    button:hover { background: #2980b9; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #fff; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+    th { background: #3498db; color: #fff; }
+    .actions { margin-top: 20px; }
+    #userInfo { margin: 15px 0; padding: 10px; background: #ecf0f1; border-radius: 5px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>📊 Databillz by OM SANSKAR</h1>
+    <p>Smart Billing & Transaction Management</p>
+    <!-- Google Sign-In button -->
+    <div id="g_id_onload"
+         data-client_id="457422547936-nd82lob0laca4vcs67b1neh6ur18sve3.apps.googleusercontent.com"
+         data-context="signin"
+         data-ux_mode="popup"
+         data-callback="handleCredentialResponse"
+         data-auto_prompt="false">
+    </div>
+    <div class="g_id_signin" data-type="standard"></div>
+  </header>
+
+  <main id="app" style="display:none;">
+    <div id="userInfo"></div>
+
+    <h2>Add Transaction</h2>
+    <form id="transactionForm">
+      <label>Date: <input type="date" id="date" required></label>
+      <label>Category:
+        <select id="category" required>
+          <option value="Cold Drinks">Cold Drinks</option>
+          <option value="Recharge Services">Recharge Services</option>
+          <option value="Cash Withdrawals">Cash Withdrawals</option>
+          <option value="Other">Other</option>
+        </select>
+      </label>
+      <label>Item: <input type="text" id="item" placeholder="e.g. Pepsi, Jio" required></label>
+      <label>Amount: <input type="number" id="amount" required></label>
+      <button type="submit">➕ Add Entry</button>
+    </form>
+
+    <h2>Transactions</h2>
+    <table id="transactionTable">
+      <thead>
+        <tr>
+          <th>Date</th><th>Category</th><th>Item</th><th>Amount</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <div class="actions">
+      <button onclick="viewSummary('daily')">📅 Daily View</button>
+      <button onclick="viewSummary('monthly')">📆 Monthly View</button>
+      <button onclick="viewSummary('yearly')">🗓️ Yearly View</button>
+      <button onclick="exportPDF()">📄 Export PDF</button>
+      <button onclick="exportExcel()">📊 Export Excel</button>
+    </div>
+
+    <h2>Summary</h2>
+    <div id="summary"></div>
+  </main>
+
+  <!-- Google Identity Services -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <!-- Libraries for export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <script>
+    let transactions = JSON.parse(localStorage.getItem("transactions")) || [];
+
+    const form = document.getElementById("transactionForm");
+    const tableBody = document.querySelector("#transactionTable tbody");
+    const summaryDiv = document.getElementById("summary");
+    const appDiv = document.getElementById("app");
+    const userInfoDiv = document.getElementById("userInfo");
+
+    function renderTable() {
+      tableBody.innerHTML = "";
+      transactions.forEach(t => {
+        let row = `<tr>
+          <td>${t.date}</td>
+          <td>${t.category}</td>
+          <td>${t.item}</td>
+          <td>${t.amount}</td>
+        </tr>`;
+        tableBody.innerHTML += row;
+      });
+    }
+
+    form.addEventListener("submit", e => {
+      e.preventDefault();
+      const transaction = {
+        date: document.getElementById("date").value,
+        category: document.getElementById("category").value,
+        item: document.getElementById("item").value,
+        amount: parseFloat(document.getElementById("amount").value)
+      };
+      transactions.push(transaction);
+      localStorage.setItem("transactions", JSON.stringify(transactions));
+      renderTable();
+      form.reset();
+    });
+
+    function viewSummary(type) {
+      let totals = {};
+      if (type === "daily") {
+        transactions.forEach(t => {
+          totals[t.date] = (totals[t.date] || 0) + t.amount;
+        });
+      } else if (type === "monthly") {
+        transactions.forEach(t => {
+          let month = t.date.slice(0,7); // YYYY-MM
+          totals[month] = (totals[month] || 0) + t.amount;
+        });
+      } else if (type === "yearly") {
+        transactions.forEach(t => {
+          let year = t.date.slice(0,4);
+          totals[year] = (totals[year] || 0) + t.amount;
+        });
+      }
+      summaryDiv.innerHTML = "<ul>" + Object.entries(totals).map(([k,v]) => `<li>${k}: ₹${v}</li>`).join("") + "</ul>";
+    }
+
+    function exportPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      doc.text("Databillz Transactions Report", 10, 10);
+      let y = 20;
+      transactions.forEach(t => {
+        doc.text(`${t.date} | ${t.category} | ${t.item} | ₹${t.amount}`, 10, y);
+        y += 10;
+      });
+      doc.save("Databillz_Report.pdf");
+    }
+
+    function exportExcel() {
+      let worksheet = XLSX.utils.json_to_sheet(transactions);
+      let workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Transactions");
+      XLSX.writeFile(workbook, "Databillz_Report.xlsx");
+    }
+
+    // Google Login callback
+    function handleCredentialResponse(response) {
+      const data = jwt_decode(response.credential);
+      userInfoDiv.innerHTML = `<strong>Signed in as:</strong> ${data.name} (${data.email})`;
+      appDiv.style.display = "block";
+    }
+
+    // Helper to decode JWT
+    function jwt_decode(token) {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+      return JSON.parse(jsonPayload);
+    }
+
+    renderTable();
+  </script>
+  <footer style="background:#2c3e50; color:#fff; text-align:center; padding:15px; margin-top:30px;">
+  <p>
+    <a href="privacy.html" style="color:#fff; margin:0 10px;">Privacy Policy</a> |
+    <a href="terms.html" style="color:#fff; margin:0 10px;">Terms of Service</a>
+  </p>
+</footer>
+</body>
+</html>
