@@ -52,7 +52,6 @@
          data-auto_prompt="false">
     </div>
     <div class="g_id_signin" data-type="standard"></div>
-    <button onclick="signOut()" style="background:#e74c3c;">🚪 Sign Out</button>
   </header>
 
   <main id="app" style="display:none;">
@@ -176,6 +175,3 @@
       return date.toLocaleDateString("en-IN", { weekday: "long" });
     }
 
-    function viewSummary(type) {
-      let totals = {};
-      if (type === "daily") {
