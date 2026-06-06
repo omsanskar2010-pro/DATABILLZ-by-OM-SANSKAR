@@ -2,35 +2,197 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Privacy Policy — Databillz</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy - Databillz</title>
   <style>
-    body { font-family: Arial, sans-serif; margin:0; background:#f4f4f4; }
-    header { background:#2c3e50; color:#fff; padding:15px; text-align:center; }
-    main { max-width:800px; margin:auto; background:#fff; padding:20px; border-radius:8px; margin-top:20px; }
-    h1 { color:#2c3e50; }
-    p { line-height:1.6; }
-    footer { background:#2c3e50; color:#fff; text-align:center; padding:15px; margin-top:30px; }
-    a { color:#3498db; text-decoration:none; }
-    a:hover { text-decoration:underline; }
+    :root {
+      color-scheme: light;
+      --bg: #eef3f8;
+      --surface: #ffffff;
+      --surface-soft: #f7fafc;
+      --text: #18212f;
+      --muted: #64748b;
+      --border: #d9e2ec;
+      --brand: #0f766e;
+      --brand-strong: #115e59;
+      --shadow: 0 12px 32px rgba(15, 23, 42, 0.11);
+    }
+
+    body.dark {
+      color-scheme: dark;
+      --bg: #111827;
+      --surface: #1f2937;
+      --surface-soft: #263244;
+      --text: #f8fafc;
+      --muted: #cbd5e1;
+      --border: #334155;
+      --brand: #14b8a6;
+      --brand-strong: #2dd4bf;
+      --shadow: 0 16px 38px rgba(0, 0, 0, 0.3);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      letter-spacing: 0;
+    }
+
+    header {
+      background: linear-gradient(135deg, #0f766e, #2563eb);
+      color: #fff;
+      padding: 24px 18px;
+    }
+
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      max-width: 980px;
+      margin: 0 auto;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .brand img {
+      width: 58px;
+      height: 58px;
+      object-fit: contain;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.18);
+      padding: 6px;
+    }
+
+    h1, h2, p { margin-top: 0; }
+    h1 { margin-bottom: 4px; font-size: clamp(1.55rem, 3vw, 2.25rem); }
+    h2 { margin-bottom: 14px; font-size: 1.35rem; }
+    p { line-height: 1.7; color: var(--muted); }
+
+    main {
+      width: min(980px, calc(100% - 28px));
+      margin: 22px auto 36px;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      padding: 22px;
+    }
+
+    .notice {
+      background: color-mix(in srgb, var(--brand) 12%, var(--surface));
+      border: 1px solid color-mix(in srgb, var(--brand) 28%, var(--border));
+      border-radius: 8px;
+      color: var(--text);
+      padding: 14px;
+      margin-bottom: 18px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    a.button, button {
+      min-height: 40px;
+      border: 0;
+      border-radius: 8px;
+      background: var(--brand);
+      color: #fff;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font: inherit;
+      font-weight: 800;
+      padding: 10px 14px;
+      text-decoration: none;
+    }
+
+    a.button:hover, button:hover { background: var(--brand-strong); }
+    a.secondary, button.secondary {
+      background: var(--surface-soft);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    footer {
+      background: #0f172a;
+      color: #fff;
+      text-align: center;
+      padding: 17px;
+    }
+
+    footer a { color: #fff; margin: 0 10px; }
+
+    @media (max-width: 700px) {
+      .header-inner { display: block; }
+      .actions a, .actions button { width: 100%; }
+      .panel { padding: 18px; }
+    }
   </style>
 </head>
 <body>
   <header>
-    <h1>Databillz</h1>
-    <p>Smart Billing & Transaction Management</p>
+    <div class="header-inner">
+      <div class="brand">
+        <img src="logo.png" alt="Databillz Logo">
+        <div>
+          <h1>Databillz</h1>
+          <p>Smart billing, spending history, and reports by OM SANSKAR</p>
+        </div>
+      </div>
+      <button class="secondary" id="themeToggle" type="button">Dark Mode</button>
+    </div>
   </header>
 
   <main>
-    <h1>Privacy Policy</h1>
-    <p>Databillz stores transactions locally on your device. No data is shared externally.</p>
-    <p>Your Google account is used only for sign‑in. We do not collect or transmit personal data beyond authentication.</p>
-    <p>By using Databillz, you agree to this local storage policy.</p>
+    <section class="panel">
+      <h2>Privacy Policy</h2>
+      <p class="notice">Databillz keeps billing records local by default. Your records stay in your browser storage unless you later connect cloud sync.</p>
+      <p>Your Google account is used for sign-in and account separation, so each account can see its own records on the same device.</p>
+      <p>Databillz does not sell your data, publish your records, or send your transaction history to a server in the current local-storage version.</p>
+      <p>If Firebase, Google Drive, Gmail export, or another cloud feature is enabled later, the app may request extra permission before syncing or sending data.</p>
+      <p>You can remove locally stored records by using the delete controls inside the app or by clearing browser site data.</p>
 
-    <p><a href="index.html">⬅ Back to Home</a> | <a href="terms.html">View Terms of Service</a></p>
+      <div class="actions">
+        <a class="button" href="index.html">Back to Home</a>
+        <a class="button secondary" href="terms.html">View Terms of Service</a>
+      </div>
+    </section>
   </main>
 
   <footer>
-    <p>&copy; 2026 Databillz | <a href="privacy.html" style="color:#fff;">Privacy Policy</a> | <a href="terms.html" style="color:#fff;">Terms of Service</a></p>
+    <a href="privacy.html">Privacy Policy</a> |
+    <a href="terms.html">Terms of Service</a>
   </footer>
+
+  <script>
+    const themeToggle = document.getElementById("themeToggle");
+    if (localStorage.getItem("databillz_theme") === "dark") {
+      document.body.classList.add("dark");
+      themeToggle.textContent = "Light Mode";
+    }
+    themeToggle.addEventListener("click", () => {
+      document.body.classList.toggle("dark");
+      const isDark = document.body.classList.contains("dark");
+      localStorage.setItem("databillz_theme", isDark ? "dark" : "light");
+      themeToggle.textContent = isDark ? "Light Mode" : "Dark Mode";
+    });
+  </script>
 </body>
 </html>
