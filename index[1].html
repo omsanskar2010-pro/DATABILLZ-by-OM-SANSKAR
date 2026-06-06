@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Databillz by OM SANSKAR - Billing System</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #eef3f8;
+      --surface: #ffffff;
+      --surface-soft: #f7fafc;
+      --text: #18212f;
+      --muted: #64748b;
+      --border: #d9e2ec;
+      --brand: #0f766e;
+      --brand-strong: #115e59;
+      --accent: #2563eb;
+      --danger: #dc2626;
+      --danger-soft: #fee2e2;
+      --shadow: 0 12px 32px rgba(15, 23, 42, 0.11);
+    }
+
+    body.dark {
+      color-scheme: dark;
+      --bg: #111827;
+      --surface: #1f2937;
+      --surface-soft: #263244;
+      --text: #f8fafc;
+      --muted: #cbd5e1;
+      --border: #334155;
+      --brand: #14b8a6;
+      --brand-strong: #2dd4bf;
+      --accent: #60a5fa;
+      --danger: #f87171;
+      --danger-soft: #442326;
+      --shadow: 0 16px 38px rgba(0, 0, 0, 0.3);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      letter-spacing: 0;
+    }
+
+    header {
+      background: linear-gradient(135deg, #0f766e, #2563eb);
+      color: #fff;
+      padding: 24px 18px;
+    }
+
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      max-width: 1180px;
+      margin: 0 auto;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .brand img {
+      width: 58px;
+      height: 58px;
+      object-fit: contain;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.18);
+      padding: 6px;
+    }
+
+    h1, h2, h3, p { margin-top: 0; }
+    h1 { margin-bottom: 4px; font-size: clamp(1.55rem, 3vw, 2.25rem); }
+    h2 { margin-bottom: 14px; font-size: 1.12rem; }
+    h3 { margin-bottom: 10px; font-size: 1rem; }
+    p { color: inherit; opacity: 0.9; }
+
+    main {
+      width: min(1180px, calc(100% - 28px));
+      margin: 22px auto 36px;
+    }
+
+    .top-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(280px, 390px) minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+
+    .panel + .panel { margin-top: 18px; }
+
+    .field {
+      display: grid;
+      gap: 6px;
+      margin-bottom: 13px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+
+    input, select {
+      width: 100%;
+      min-height: 42px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface-soft);
+      color: var(--text);
+      padding: 10px 12px;
+      font: inherit;
+      font-weight: 500;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--accent);
+      outline: 3px solid color-mix(in srgb, var(--accent) 22%, transparent);
+    }
+
+    .button-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    button {
+      min-height: 40px;
+      border: 0;
+      border-radius: 8px;
+      background: var(--brand);
+      color: #fff;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 800;
+      padding: 10px 14px;
+      transition: transform 0.15s ease, background 0.15s ease, opacity 0.15s ease;
+    }
+
+    button:hover { background: var(--brand-strong); transform: translateY(-1px); }
+    button:disabled { cursor: not-allowed; opacity: 0.55; transform: none; }
+    button.secondary { background: var(--surface-soft); color: var(--text); border: 1px solid var(--border); }
+    button.secondary:hover { background: var(--border); }
+    button.danger { background: var(--danger); color: #fff; }
+    button.danger-soft { background: var(--danger-soft); color: var(--danger); border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent); }
+
+    .user-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px;
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--brand) 12%, var(--surface));
+      border: 1px solid color-mix(in srgb, var(--brand) 28%, var(--border));
+      margin-bottom: 18px;
+    }
+
+    .muted { color: var(--muted); }
+    .small { font-size: 0.86rem; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .stat {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      box-shadow: var(--shadow);
+    }
+
+    .stat span { display: block; color: var(--muted); font-size: 0.84rem; font-weight: 800; }
+    .stat strong { display: block; margin-top: 6px; font-size: 1.28rem; }
+
+    .filters {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(120px, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+    }
+
+    th, td {
+      border-bottom: 1px solid var(--border);
+      padding: 11px 10px;
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      background: var(--brand);
+      color: #fff;
+      z-index: 1;
+    }
+
+    td.amount, th.amount { text-align: right; }
+    tfoot td {
+      background: var(--surface-soft);
+      font-weight: 900;
+    }
+
+    .empty-state {
+      padding: 22px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .charts {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 18px;
+    }
+
+    .chart-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      min-height: 280px;
+      box-shadow: var(--shadow);
+    }
+
+    .summary-list {
+      display: grid;
+      gap: 8px;
+      padding: 0;
+      margin: 0;
+      list-style: none;
+    }
+
+    .summary-list li {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface-soft);
+    }
+
+    .category-row {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .auth-screen {
+      display: grid;
+      place-items: center;
+      min-height: 46vh;
+      text-align: center;
+    }
+
+    footer {
+      background: #0f172a;
+      color: #fff;
+      text-align: center;
+      padding: 17px;
+    }
+
+    footer a { color: #fff; margin: 0 10px; }
+
+    @media (max-width: 860px) {
+      .header-inner, .grid { display: block; }
+      .top-actions { justify-content: flex-start; margin-top: 14px; }
+      .stats, .filters, .charts { grid-template-columns: 1fr; }
+      .panel { padding: 15px; }
+      table { min-width: 0; }
+      thead { display: none; }
+      tbody tr, tfoot tr {
+        display: grid;
+        gap: 6px;
+        padding: 12px;
+        border-bottom: 1px solid var(--border);
+      }
+      td {
+        display: flex;
+        justify-content: space-between;
+        gap: 14px;
+        border: 0;
+        padding: 4px 0;
+        text-align: right;
+      }
+      td::before {
+        content: attr(data-label);
+        color: var(--muted);
+        font-weight: 800;
+        text-align: left;
+      }
+      td.amount { text-align: right; }
+      tfoot td { background: transparent; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <div class="brand">
+        <img src="logo.png" alt="Databillz Logo">
+        <div>
+          <h1>Databillz</h1>
+          <p>Smart billing, spending history, and reports by OM SANSKAR</p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button class="secondary" id="themeToggle" type="button">Dark Mode</button>
+        <button class="secondary" id="syncButton" type="button">Cloud Sync</button>
+        <button class="danger-soft" id="signOutButton" type="button" hidden>Sign Out</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section id="authScreen" class="auth-screen panel">
+      <div>
+        <h2>Sign in to open your billing workspace</h2>
+        <p class="muted">Sign in with Google to sync your records across devices.</p>
+        <div class="button-row" style="justify-content:center; margin-top:14px;">
+          <button type="button" id="googleSignInButton">Sign in with Google</button>
+          <button class="secondary" type="button" id="guestButton">Continue as Guest</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="app" style="display:none;">
+      <div id="userInfo" class="user-card"></div>
+
+      <div class="stats">
+        <div class="stat"><span>Total Spent</span><strong id="totalSpent">₹0.00</strong></div>
+        <div class="stat"><span>Transactions</span><strong id="transactionCount">0</strong></div>
+        <div class="stat"><span>Top Category</span><strong id="topCategory">-</strong></div>
+      </div>
+
+      <div class="grid">
+        <div>
+          <section class="panel">
+            <h2>Add Transaction</h2>
+            <form id="transactionForm">
+              <label class="field">Date <input type="date" id="date" required></label>
+              <label class="field">Category <select id="category" required></select></label>
+              <label class="field">Item <input type="text" id="item" placeholder="e.g. Pepsi, Jio recharge" required></label>
+              <label class="field">Amount <input type="number" id="amount" min="0" step="0.01" placeholder="0.00" required></label>
+              <button type="submit">Add Entry</button>
+            </form>
+          </section>
+
+          <section class="panel">
+            <h2>Custom Categories</h2>
+            <form id="categoryForm">
+              <label class="field">New category <input type="text" id="newCategory" placeholder="e.g. Grocery"></label>
+              <button type="submit">Add Category</button>
+            </form>
+            <div id="categoryList"></div>
+          </section>
+
+          <section class="panel">
+            <h2>Reports</h2>
+            <div class="button-row">
+              <button type="button" onclick="viewSummary('daily')">Daily</button>
+              <button type="button" onclick="viewSummary('monthly')">Monthly</button>
+              <button type="button" onclick="viewSummary('yearly')">Yearly</button>
+              <button class="secondary" type="button" onclick="exportPDF()">Export PDF</button>
+              <button class="secondary" type="button" onclick="exportExcel()">Export Excel</button>
+              <button class="secondary" type="button" onclick="emailExport()">Email Export</button>
+            </div>
+            <div id="summary" style="margin-top:14px;"></div>
+          </section>
+        </div>
+
+        <div>
+          <section class="panel">
+            <h2>Transactions</h2>
+            <div class="filters">
+              <input type="search" id="searchInput" placeholder="Search item/category">
+              <select id="filterCategory"><option value="">All categories</option></select>
+              <input type="date" id="fromDate" aria-label="From date">
+              <input type="date" id="toDate" aria-label="To date">
+            </div>
+            <div class="button-row" style="margin-bottom:14px;">
+              <button class="secondary" type="button" id="clearFilters">Clear Filters</button>
+              <button class="danger" type="button" id="deleteAllButton">Delete All History</button>
+            </div>
+            <div class="table-wrap">
+              <table id="transactionTable">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Category</th>
+                    <th>Item</th>
+                    <th class="amount">Amount</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+                <tfoot></tfoot>
+              </table>
+              <div id="emptyState" class="empty-state" hidden>No transactions found.</div>
+            </div>
+          </section>
+
+          <div class="charts">
+            <section class="chart-box">
+              <h3>Category Share</h3>
+              <canvas id="categoryChart"></canvas>
+            </section>
+            <section class="chart-box">
+              <h3>Monthly Spending</h3>
+              <canvas id="monthlyChart"></canvas>
+            </section>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <a href="privacy.html">Privacy Policy</a> |
+    <a href="terms.html">Terms of Service</a>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-analytics.js";
+    import {
+      getAuth,
+      GoogleAuthProvider,
+      onAuthStateChanged,
+      signInWithPopup,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+    import {
+      addDoc,
+      collection,
+      deleteDoc,
+      doc,
+      getFirestore,
+      getDocs,
+      onSnapshot,
+      query,
+      setDoc,
+      updateDoc,
+      where
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBFdRmFsbLeT35OOL_9HOOJ2h6_LHd0064",
+      authDomain: "databillz-338ce.firebaseapp.com",
+      projectId: "databillz-338ce",
+      storageBucket: "databillz-338ce.firebasestorage.app",
+      messagingSenderId: "679797951408",
+      appId: "1:679797951408:web:607fe599e55de37b20e475",
+      measurementId: "G-4V5DLNHS9W"
+    };
+
+    const firebaseApp = initializeApp(firebaseConfig);
+    const auth = getAuth(firebaseApp);
+    const provider = new GoogleAuthProvider();
+    const db = getFirestore(firebaseApp);
+    if (location.protocol === "https:") getAnalytics(firebaseApp);
+
+    const defaultCategories = ["Cold Drinks", "Recharge Services", "Cash Withdrawals", "Other"];
+    const appState = {
+      user: JSON.parse(localStorage.getItem("databillz_current_user")) || null,
+      transactions: [],
+      categories: [],
+      summaryType: "daily",
+      charts: {},
+      unsubscribers: [],
+      cloudReady: false,
+      cloudError: "",
+      pendingMigration: []
+    };
+
+    const form = document.getElementById("transactionForm");
+    const categoryForm = document.getElementById("categoryForm");
+    const tableBody = document.querySelector("#transactionTable tbody");
+    const tableFoot = document.querySelector("#transactionTable tfoot");
+    const summaryDiv = document.getElementById("summary");
+    const appDiv = document.getElementById("app");
+    const authScreen = document.getElementById("authScreen");
+    const userInfoDiv = document.getElementById("userInfo");
+    const categorySelect = document.getElementById("category");
+    const filterCategory = document.getElementById("filterCategory");
+
+    const storageKey = (name) => `databillz_${appState.user?.uid || appState.user?.email || "guest"}_${name}`;
+    const money = (value) => `₹${Number(value || 0).toFixed(2)}`;
+    const isGuest = () => !appState.user?.uid || appState.user.uid === "guest";
+    const userDoc = () => doc(db, "users", appState.user.uid);
+    const transactionsRef = () => collection(db, "users", appState.user.uid, "transactions");
+    const categoriesDoc = () => doc(db, "users", appState.user.uid, "settings", "categories");
+
+    function setCloudStatus(message, isError = false) {
+      appState.cloudError = isError ? message : "";
+      const status = document.getElementById("cloudStatus");
+      if (!status) return;
+      status.textContent = message;
+      status.style.color = isError ? "var(--danger)" : "var(--muted)";
+    }
+
+    function saveAll() {
+      localStorage.setItem(storageKey("transactions"), JSON.stringify(appState.transactions));
+      localStorage.setItem(storageKey("categories"), JSON.stringify(appState.categories));
+    }
+
+    async function loadUserData() {
+      clearCloudListeners();
+
+      if (!db || isGuest()) {
+        appState.cloudReady = false;
+        setCloudStatus("Guest mode: records are saved only on this device.");
+        appState.transactions = JSON.parse(localStorage.getItem(storageKey("transactions"))) || [];
+        appState.categories = JSON.parse(localStorage.getItem(storageKey("categories"))) || defaultCategories;
+        renderEverything();
+        return;
+      }
+
+      appState.cloudReady = true;
+      setCloudStatus("Connecting to Firebase cloud sync...");
+      const legacyTransactionKey = `databillz_${appState.user.email}_transactions`;
+      const legacyCategoryKey = `databillz_${appState.user.email}_categories`;
+      appState.transactions =
+        JSON.parse(localStorage.getItem(storageKey("transactions"))) ||
+        JSON.parse(localStorage.getItem(legacyTransactionKey)) ||
+        [];
+      appState.categories =
+        JSON.parse(localStorage.getItem(storageKey("categories"))) ||
+        JSON.parse(localStorage.getItem(legacyCategoryKey)) ||
+        defaultCategories;
+      appState.pendingMigration = [...appState.transactions];
+      renderEverything();
+
+      try {
+        await setDoc(userDoc(), {
+          name: appState.user.name,
+          email: appState.user.email,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+      } catch (error) {
+        appState.cloudReady = false;
+        setCloudStatus(`Cloud error: ${error.message}`, true);
+        return;
+      }
+
+      appState.unsubscribers.push(onSnapshot(categoriesDoc(), snapshot => {
+        if (snapshot.exists()) {
+          appState.categories = snapshot.data().items || defaultCategories;
+          saveAll();
+          renderEverything();
+        } else {
+          setDoc(categoriesDoc(), { items: appState.categories }, { merge: true }).catch(error => setCloudStatus(`Cloud error: ${error.message}`, true));
+        }
+      }, error => setCloudStatus(`Cloud error: ${error.message}`, true)));
+
+      appState.unsubscribers.push(onSnapshot(transactionsRef(), snapshot => {
+        setCloudStatus("Cloud Sync active: records are saving to Firebase.");
+        if (snapshot.empty && appState.pendingMigration.length) {
+          const rowsToMigrate = [...appState.pendingMigration];
+          appState.pendingMigration = [];
+          Promise.all(rowsToMigrate.map(({ id, ...row }) => addDoc(transactionsRef(), row)))
+            .catch(error => setCloudStatus(`Migration error: ${error.message}`, true));
+          return;
+        }
+        appState.transactions = snapshot.docs.map(item => ({ id: item.id, ...item.data() }));
+        appState.transactions.sort((a, b) => String(b.date).localeCompare(String(a.date)));
+        saveAll();
+        renderEverything();
+      }, error => setCloudStatus(`Cloud error: ${error.message}`, true)));
+    }
+
+    function clearCloudListeners() {
+      appState.unsubscribers.forEach(unsubscribe => unsubscribe());
+      appState.unsubscribers = [];
+    }
+
+    function openApp(user) {
+      appState.user = user;
+      localStorage.setItem("databillz_current_user", JSON.stringify(user));
+      authScreen.style.display = "none";
+      appDiv.style.display = "block";
+      document.getElementById("signOutButton").hidden = false;
+      userInfoDiv.innerHTML = `<div><strong>Signed in as:</strong> ${user.name}<br><span class="muted small">${user.email}</span><br><span class="small" id="cloudStatus">Preparing sync...</span></div><span class="small">Private records for this account</span>`;
+      loadUserData();
+    }
+
+    function renderCategories() {
+      const options = appState.categories.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
+      categorySelect.innerHTML = options;
+      filterCategory.innerHTML = `<option value="">All categories</option>${options}`;
+      document.getElementById("categoryList").innerHTML = appState.categories.map(category => `
+        <div class="category-row">
+          <input value="${escapeHtml(category)}" data-category="${escapeHtml(category)}" aria-label="Rename ${escapeHtml(category)}">
+          <button class="secondary" type="button" onclick="renameCategory('${encodeURIComponent(category)}', this.previousElementSibling.value)">Rename</button>
+          <button class="danger-soft" type="button" onclick="deleteCategory('${encodeURIComponent(category)}')">Delete</button>
+        </div>
+      `).join("");
+    }
+
+    function getFilteredTransactions() {
+      const keyword = document.getElementById("searchInput").value.trim().toLowerCase();
+      const category = filterCategory.value;
+      const from = document.getElementById("fromDate").value;
+      const to = document.getElementById("toDate").value;
+
+      return appState.transactions.filter(t => {
+        const matchesKeyword = !keyword || `${t.category} ${t.item}`.toLowerCase().includes(keyword);
+        const matchesCategory = !category || t.category === category;
+        const afterFrom = !from || t.date >= from;
+        const beforeTo = !to || t.date <= to;
+        return matchesKeyword && matchesCategory && afterFrom && beforeTo;
+      });
+    }
+
+    function renderTable() {
+      const rows = getFilteredTransactions();
+      tableBody.innerHTML = rows.map((t) => {
+        const index = appState.transactions.indexOf(t);
+        return `<tr>
+          <td data-label="Date">${formatDailyDate(t.date)}</td>
+          <td data-label="Category">${escapeHtml(t.category)}</td>
+          <td data-label="Item">${escapeHtml(t.item)}</td>
+          <td data-label="Amount" class="amount">${money(t.amount)}</td>
+          <td data-label="Action"><button class="danger-soft" type="button" onclick="deleteTransaction('${escapeHtml(t.id || String(index))}')">Remove</button></td>
+        </tr>`;
+      }).join("");
+
+      const total = rows.reduce((sum, t) => sum + Number(t.amount), 0);
+      tableFoot.innerHTML = rows.length ? `<tr>
+        <td data-label="Total" colspan="3">Filtered Total</td>
+        <td data-label="Amount" class="amount">${money(total)}</td>
+        <td data-label="Rows">${rows.length} row${rows.length === 1 ? "" : "s"}</td>
+      </tr>` : "";
+      document.getElementById("emptyState").hidden = rows.length > 0;
+    }
+
+    function renderStats() {
+      const total = appState.transactions.reduce((sum, t) => sum + Number(t.amount), 0);
+      const byCategory = groupTotals(appState.transactions, "category");
+      const top = Object.entries(byCategory).sort((a, b) => b[1] - a[1])[0];
+      document.getElementById("totalSpent").textContent = money(total);
+      document.getElementById("transactionCount").textContent = appState.transactions.length;
+      document.getElementById("topCategory").textContent = top ? top[0] : "-";
+    }
+
+    function renderCharts() {
+      if (!window.Chart) return;
+      const categoryTotals = groupTotals(appState.transactions, "category");
+      const monthlyTotals = groupTotals(appState.transactions, "month");
+      drawChart("categoryChart", "doughnut", Object.keys(categoryTotals), Object.values(categoryTotals));
+      drawChart("monthlyChart", "bar", Object.keys(monthlyTotals), Object.values(monthlyTotals));
+    }
+
+    function drawChart(canvasId, type, labels, data) {
+      const ctx = document.getElementById(canvasId);
+      if (appState.charts[canvasId]) appState.charts[canvasId].destroy();
+      appState.charts[canvasId] = new Chart(ctx, {
+        type,
+        data: {
+          labels,
+          datasets: [{ data, backgroundColor: ["#0f766e", "#2563eb", "#f59e0b", "#dc2626", "#7c3aed", "#0891b2"] }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: "bottom" } },
+          scales: type === "bar" ? { y: { beginAtZero: true } } : {}
+        }
+      });
+    }
+
+    function viewSummary(type) {
+      appState.summaryType = type;
+      const totals = {};
+      appState.transactions.forEach(t => {
+        const key = type === "daily" ? formatDailyDate(t.date) : type === "monthly" ? t.date.slice(0, 7) : t.date.slice(0, 4);
+        totals[key] = (totals[key] || 0) + Number(t.amount);
+      });
+      summaryDiv.innerHTML = Object.keys(totals).length
+        ? `<ul class="summary-list">${Object.entries(totals).map(([k, v]) => `<li><span>${k}</span><strong>${money(v)}</strong></li>`).join("")}</ul>`
+        : `<p class="muted">No summary yet.</p>`;
+    }
+
+    function renderEverything() {
+      renderCategories();
+      renderTable();
+      renderStats();
+      viewSummary(appState.summaryType);
+      renderCharts();
+    }
+
+    form.addEventListener("submit", async e => {
+      e.preventDefault();
+      const amount = Number.parseFloat(document.getElementById("amount").value);
+      if (!Number.isFinite(amount)) return;
+      const transaction = {
+        id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+        date: document.getElementById("date").value,
+        category: categorySelect.value,
+        item: document.getElementById("item").value.trim(),
+        amount: Math.round(amount * 100) / 100
+      };
+
+      if (appState.cloudReady) {
+        const { id, ...cloudTransaction } = transaction;
+        try {
+          await addDoc(transactionsRef(), cloudTransaction);
+          setCloudStatus("Saved to Firebase cloud.");
+        } catch (error) {
+          appState.transactions.push(transaction);
+          saveAll();
+          renderEverything();
+          setCloudStatus(`Cloud save failed, saved locally: ${error.message}`, true);
+        }
+      } else {
+        appState.transactions.push(transaction);
+        saveAll();
+        renderEverything();
+      }
+      form.reset();
+      document.getElementById("date").valueAsDate = new Date();
+    });
+
+    categoryForm.addEventListener("submit", async e => {
+      e.preventDefault();
+      const value = document.getElementById("newCategory").value.trim();
+      if (value && !appState.categories.includes(value)) {
+        appState.categories.push(value);
+        await saveCategories();
+        renderEverything();
+      }
+      categoryForm.reset();
+    });
+
+    async function deleteTransaction(id) {
+      if (appState.cloudReady) {
+        await deleteDoc(doc(db, "users", appState.user.uid, "transactions", id));
+      } else {
+        appState.transactions = appState.transactions.filter(t => t.id !== id);
+        saveAll();
+        renderEverything();
+      }
+    }
+
+    async function renameCategory(encodedOldName, newName) {
+      const oldName = decodeURIComponent(encodedOldName);
+      newName = newName.trim();
+      if (!newName || appState.categories.includes(newName)) return;
+      appState.categories = appState.categories.map(c => c === oldName ? newName : c);
+      appState.transactions.forEach(t => { if (t.category === oldName) t.category = newName; });
+      if (appState.cloudReady) {
+        await saveCategories();
+        const matching = await getDocs(query(transactionsRef(), where("category", "==", oldName)));
+        await Promise.all(matching.docs.map(item => updateDoc(item.ref, { category: newName })));
+      } else {
+        saveAll();
+      }
+      renderEverything();
+    }
+
+    async function deleteCategory(encodedName) {
+      const name = decodeURIComponent(encodedName);
+      if (appState.categories.length === 1) {
+        alert("Keep at least one category.");
+        return;
+      }
+      if (!confirm(`Delete "${name}"? Existing transactions will move to Other.`)) return;
+      appState.categories = appState.categories.filter(c => c !== name);
+      if (!appState.categories.includes("Other")) appState.categories.push("Other");
+      appState.transactions.forEach(t => { if (t.category === name) t.category = "Other"; });
+      if (appState.cloudReady) {
+        await saveCategories();
+        const matching = await getDocs(query(transactionsRef(), where("category", "==", name)));
+        await Promise.all(matching.docs.map(item => updateDoc(item.ref, { category: "Other" })));
+      } else {
+        saveAll();
+      }
+      renderEverything();
+    }
+
+    async function saveCategories() {
+      saveAll();
+      if (appState.cloudReady) await setDoc(categoriesDoc(), { items: appState.categories }, { merge: true });
+    }
+
+    document.getElementById("deleteAllButton").addEventListener("click", async () => {
+      const locationText = appState.cloudReady ? "from Firebase cloud sync and this device" : "for this account on this device";
+      const confirmed = confirm(`Red warning: this will permanently clear all transaction history ${locationText}.`);
+      if (!confirmed) return;
+      if (appState.cloudReady) {
+        const allTransactions = await getDocs(transactionsRef());
+        await Promise.all(allTransactions.docs.map(item => deleteDoc(item.ref)));
+      } else {
+        appState.transactions = [];
+        saveAll();
+        renderEverything();
+      }
+    });
+
+    document.getElementById("clearFilters").addEventListener("click", () => {
+      ["searchInput", "fromDate", "toDate"].forEach(id => document.getElementById(id).value = "");
+      filterCategory.value = "";
+      renderTable();
+    });
+
+    ["searchInput", "filterCategory", "fromDate", "toDate"].forEach(id => {
+      document.getElementById(id).addEventListener("input", renderTable);
+    });
+
+    document.getElementById("themeToggle").addEventListener("click", () => {
+      document.body.classList.toggle("dark");
+      const isDark = document.body.classList.contains("dark");
+      localStorage.setItem("databillz_theme", isDark ? "dark" : "light");
+      document.getElementById("themeToggle").textContent = isDark ? "Light Mode" : "Dark Mode";
+    });
+
+    document.getElementById("signOutButton").addEventListener("click", () => {
+      clearCloudListeners();
+      localStorage.removeItem("databillz_current_user");
+      signOut(auth).finally(() => location.reload());
+    });
+
+    document.getElementById("guestButton").addEventListener("click", () => {
+      openApp({ uid: "guest", name: "Guest User", email: "guest@databillz.local" });
+    });
+
+    document.getElementById("googleSignInButton").addEventListener("click", async () => {
+      try {
+        await signInWithPopup(auth, provider);
+      } catch (error) {
+        alert(`Google sign-in failed: ${error.message}`);
+      }
+    });
+
+    document.getElementById("syncButton").addEventListener("click", () => {
+      alert(appState.cloudReady ? "Cloud Sync is active. Your records are saved in Firebase Firestore for this Google account." : "Cloud Sync works after signing in with Google.");
+    });
+
+    function emailExport() {
+      alert("Email export needs Gmail API OAuth consent and scopes. Export PDF/Excel first, then connect Gmail API credentials to send automatically.");
+    }
+
+    function exportPDF() {
+      if (!window.jspdf) {
+        alert("PDF library is still loading. Try again in a moment.");
+        return;
+      }
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      doc.text("Databillz Transactions Report", 10, 10);
+      doc.text(`User: ${appState.user.name} (${appState.user.email})`, 10, 18);
+      let y = 30;
+      getFilteredTransactions().forEach(t => {
+        doc.text(`${formatDailyDate(t.date)} | ${t.category} | ${t.item} | ${money(t.amount)}`, 10, y);
+        y += 9;
+        if (y > 280) { doc.addPage(); y = 16; }
+      });
+      doc.save("Databillz_Report.pdf");
+    }
+
+    function exportExcel() {
+      if (!window.XLSX) {
+        alert("Excel library is still loading. Try again in a moment.");
+        return;
+      }
+      const rows = getFilteredTransactions().map(t => ({
+        Date: formatDailyDate(t.date),
+        Category: t.category,
+        Item: t.item,
+        Amount: Number(t.amount).toFixed(2)
+      }));
+      const worksheet = XLSX.utils.json_to_sheet(rows);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Transactions");
+      XLSX.writeFile(workbook, "Databillz_Report.xlsx");
+    }
+
+    function groupTotals(rows, mode) {
+      return rows.reduce((totals, t) => {
+        const key = mode === "month" ? t.date.slice(0, 7) : t[mode];
+        totals[key] = (totals[key] || 0) + Number(t.amount);
+        return totals;
+      }, {});
+    }
+
+    function formatDailyDate(dateValue) {
+      if (!dateValue) return "-";
+      const date = new Date(`${dateValue}T00:00:00`);
+      const day = date.toLocaleDateString("en-IN", { weekday: "long" });
+      return `${day}, ${dateValue}`;
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, char => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
+      }[char]));
+    }
+
+    window.deleteTransaction = deleteTransaction;
+    window.renameCategory = renameCategory;
+    window.deleteCategory = deleteCategory;
+    window.viewSummary = viewSummary;
+    window.exportPDF = exportPDF;
+    window.exportExcel = exportExcel;
+    window.emailExport = emailExport;
+
+    onAuthStateChanged(auth, firebaseUser => {
+      if (!firebaseUser) return;
+      openApp({
+        uid: firebaseUser.uid,
+        name: firebaseUser.displayName || "Databillz User",
+        email: firebaseUser.email || "No email"
+      });
+    });
+
+    if (localStorage.getItem("databillz_theme") === "dark") {
+      document.body.classList.add("dark");
+      document.getElementById("themeToggle").textContent = "Light Mode";
+    }
+
+    document.getElementById("date").valueAsDate = new Date();
+  </script>
+</body>
+</html>
