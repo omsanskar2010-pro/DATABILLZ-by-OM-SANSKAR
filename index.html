@@ -360,16 +360,9 @@
     <section id="authScreen" class="auth-screen panel">
       <div>
         <h2>Sign in to open your billing workspace</h2>
-        <p class="muted">Each Google account uses its own local records on this device.</p>
-        <div id="g_id_onload"
-          data-client_id="457422547936-nd82lob0laca4vcs67b1neh6ur18sve3.apps.googleusercontent.com"
-          data-context="signin"
-          data-ux_mode="popup"
-          data-callback="handleCredentialResponse"
-          data-auto_prompt="false">
-        </div>
-        <div class="g_id_signin" data-type="standard" data-size="large"></div>
+        <p class="muted">Sign in with Google to sync your records across devices.</p>
         <div class="button-row" style="justify-content:center; margin-top:14px;">
+          <button type="button" id="googleSignInButton">Sign in with Google</button>
           <button class="secondary" type="button" id="guestButton">Continue as Guest</button>
         </div>
       </div>
@@ -471,19 +464,61 @@
     <a href="terms.html">Terms of Service</a>
   </footer>
 
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-  <script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-analytics.js";
+    import {
+      getAuth,
+      GoogleAuthProvider,
+      onAuthStateChanged,
+      signInWithPopup,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+    import {
+      addDoc,
+      collection,
+      deleteDoc,
+      doc,
+      getFirestore,
+      getDocs,
+      onSnapshot,
+      query,
+      setDoc,
+      updateDoc,
+      where
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBFdRmFsbLeT35OOL_9HOOJ2h6_LHd0064",
+      authDomain: "databillz-338ce.firebaseapp.com",
+      projectId: "databillz-338ce",
+      storageBucket: "databillz-338ce.firebasestorage.app",
+      messagingSenderId: "679797951408",
+      appId: "1:679797951408:web:607fe599e55de37b20e475",
+      measurementId: "G-4V5DLNHS9W"
+    };
+
+    const firebaseApp = initializeApp(firebaseConfig);
+    const auth = getAuth(firebaseApp);
+    const provider = new GoogleAuthProvider();
+    const db = getFirestore(firebaseApp);
+    if (location.protocol === "https:") getAnalytics(firebaseApp);
+
     const defaultCategories = ["Cold Drinks", "Recharge Services", "Cash Withdrawals", "Other"];
     const appState = {
       user: JSON.parse(localStorage.getItem("databillz_current_user")) || null,
       transactions: [],
       categories: [],
       summaryType: "daily",
-      charts: {}
+      charts: {},
+      unsubscribers: [],
+      cloudReady: false,
+      cloudError: "",
+      pendingMigration: []
     };
 
     const form = document.getElementById("transactionForm");
@@ -497,18 +532,94 @@
     const categorySelect = document.getElementById("category");
     const filterCategory = document.getElementById("filterCategory");
 
-    const storageKey = (name) => `databillz_${appState.user?.email || "guest"}_${name}`;
+    const storageKey = (name) => `databillz_${appState.user?.uid || appState.user?.email || "guest"}_${name}`;
     const money = (value) => `₹${Number(value || 0).toFixed(2)}`;
+    const isGuest = () => !appState.user?.uid || appState.user.uid === "guest";
+    const userDoc = () => doc(db, "users", appState.user.uid);
+    const transactionsRef = () => collection(db, "users", appState.user.uid, "transactions");
+    const categoriesDoc = () => doc(db, "users", appState.user.uid, "settings", "categories");
+
+    function setCloudStatus(message, isError = false) {
+      appState.cloudError = isError ? message : "";
+      const status = document.getElementById("cloudStatus");
+      if (!status) return;
+      status.textContent = message;
+      status.style.color = isError ? "var(--danger)" : "var(--muted)";
+    }
 
     function saveAll() {
       localStorage.setItem(storageKey("transactions"), JSON.stringify(appState.transactions));
       localStorage.setItem(storageKey("categories"), JSON.stringify(appState.categories));
     }
 
-    function loadUserData() {
-      appState.transactions = JSON.parse(localStorage.getItem(storageKey("transactions"))) || [];
-      appState.categories = JSON.parse(localStorage.getItem(storageKey("categories"))) || defaultCategories;
+    async function loadUserData() {
+      clearCloudListeners();
+
+      if (!db || isGuest()) {
+        appState.cloudReady = false;
+        setCloudStatus("Guest mode: records are saved only on this device.");
+        appState.transactions = JSON.parse(localStorage.getItem(storageKey("transactions"))) || [];
+        appState.categories = JSON.parse(localStorage.getItem(storageKey("categories"))) || defaultCategories;
+        renderEverything();
+        return;
+      }
+
+      appState.cloudReady = true;
+      setCloudStatus("Connecting to Firebase cloud sync...");
+      const legacyTransactionKey = `databillz_${appState.user.email}_transactions`;
+      const legacyCategoryKey = `databillz_${appState.user.email}_categories`;
+      appState.transactions =
+        JSON.parse(localStorage.getItem(storageKey("transactions"))) ||
+        JSON.parse(localStorage.getItem(legacyTransactionKey)) ||
+        [];
+      appState.categories =
+        JSON.parse(localStorage.getItem(storageKey("categories"))) ||
+        JSON.parse(localStorage.getItem(legacyCategoryKey)) ||
+        defaultCategories;
+      appState.pendingMigration = [...appState.transactions];
       renderEverything();
+
+      try {
+        await setDoc(userDoc(), {
+          name: appState.user.name,
+          email: appState.user.email,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+      } catch (error) {
+        appState.cloudReady = false;
+        setCloudStatus(`Cloud error: ${error.message}`, true);
+        return;
+      }
+
+      appState.unsubscribers.push(onSnapshot(categoriesDoc(), snapshot => {
+        if (snapshot.exists()) {
+          appState.categories = snapshot.data().items || defaultCategories;
+          saveAll();
+          renderEverything();
+        } else {
+          setDoc(categoriesDoc(), { items: appState.categories }, { merge: true }).catch(error => setCloudStatus(`Cloud error: ${error.message}`, true));
+        }
+      }, error => setCloudStatus(`Cloud error: ${error.message}`, true)));
+
+      appState.unsubscribers.push(onSnapshot(transactionsRef(), snapshot => {
+        setCloudStatus("Cloud Sync active: records are saving to Firebase.");
+        if (snapshot.empty && appState.pendingMigration.length) {
+          const rowsToMigrate = [...appState.pendingMigration];
+          appState.pendingMigration = [];
+          Promise.all(rowsToMigrate.map(({ id, ...row }) => addDoc(transactionsRef(), row)))
+            .catch(error => setCloudStatus(`Migration error: ${error.message}`, true));
+          return;
+        }
+        appState.transactions = snapshot.docs.map(item => ({ id: item.id, ...item.data() }));
+        appState.transactions.sort((a, b) => String(b.date).localeCompare(String(a.date)));
+        saveAll();
+        renderEverything();
+      }, error => setCloudStatus(`Cloud error: ${error.message}`, true)));
+    }
+
+    function clearCloudListeners() {
+      appState.unsubscribers.forEach(unsubscribe => unsubscribe());
+      appState.unsubscribers = [];
     }
 
     function openApp(user) {
@@ -517,7 +628,7 @@
       authScreen.style.display = "none";
       appDiv.style.display = "block";
       document.getElementById("signOutButton").hidden = false;
-      userInfoDiv.innerHTML = `<div><strong>Signed in as:</strong> ${user.name}<br><span class="muted small">${user.email}</span></div><span class="small">Private records for this account</span>`;
+      userInfoDiv.innerHTML = `<div><strong>Signed in as:</strong> ${user.name}<br><span class="muted small">${user.email}</span><br><span class="small" id="cloudStatus">Preparing sync...</span></div><span class="small">Private records for this account</span>`;
       loadUserData();
     }
 
@@ -558,7 +669,7 @@
           <td data-label="Category">${escapeHtml(t.category)}</td>
           <td data-label="Item">${escapeHtml(t.item)}</td>
           <td data-label="Amount" class="amount">${money(t.amount)}</td>
-          <td data-label="Action"><button class="danger-soft" type="button" onclick="deleteTransaction(${index})">Remove</button></td>
+          <td data-label="Action"><button class="danger-soft" type="button" onclick="deleteTransaction('${escapeHtml(t.id || String(index))}')">Remove</button></td>
         </tr>`;
       }).join("");
 
@@ -626,51 +737,76 @@
       renderCharts();
     }
 
-    form.addEventListener("submit", e => {
+    form.addEventListener("submit", async e => {
       e.preventDefault();
       const amount = Number.parseFloat(document.getElementById("amount").value);
       if (!Number.isFinite(amount)) return;
-      appState.transactions.push({
+      const transaction = {
         id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
         date: document.getElementById("date").value,
         category: categorySelect.value,
         item: document.getElementById("item").value.trim(),
         amount: Math.round(amount * 100) / 100
-      });
-      saveAll();
-      renderEverything();
+      };
+
+      if (appState.cloudReady) {
+        const { id, ...cloudTransaction } = transaction;
+        try {
+          await addDoc(transactionsRef(), cloudTransaction);
+          setCloudStatus("Saved to Firebase cloud.");
+        } catch (error) {
+          appState.transactions.push(transaction);
+          saveAll();
+          renderEverything();
+          setCloudStatus(`Cloud save failed, saved locally: ${error.message}`, true);
+        }
+      } else {
+        appState.transactions.push(transaction);
+        saveAll();
+        renderEverything();
+      }
       form.reset();
       document.getElementById("date").valueAsDate = new Date();
     });
 
-    categoryForm.addEventListener("submit", e => {
+    categoryForm.addEventListener("submit", async e => {
       e.preventDefault();
       const value = document.getElementById("newCategory").value.trim();
       if (value && !appState.categories.includes(value)) {
         appState.categories.push(value);
-        saveAll();
+        await saveCategories();
         renderEverything();
       }
       categoryForm.reset();
     });
 
-    function deleteTransaction(index) {
-      appState.transactions.splice(index, 1);
-      saveAll();
-      renderEverything();
+    async function deleteTransaction(id) {
+      if (appState.cloudReady) {
+        await deleteDoc(doc(db, "users", appState.user.uid, "transactions", id));
+      } else {
+        appState.transactions = appState.transactions.filter(t => t.id !== id);
+        saveAll();
+        renderEverything();
+      }
     }
 
-    function renameCategory(encodedOldName, newName) {
+    async function renameCategory(encodedOldName, newName) {
       const oldName = decodeURIComponent(encodedOldName);
       newName = newName.trim();
       if (!newName || appState.categories.includes(newName)) return;
       appState.categories = appState.categories.map(c => c === oldName ? newName : c);
       appState.transactions.forEach(t => { if (t.category === oldName) t.category = newName; });
-      saveAll();
+      if (appState.cloudReady) {
+        await saveCategories();
+        const matching = await getDocs(query(transactionsRef(), where("category", "==", oldName)));
+        await Promise.all(matching.docs.map(item => updateDoc(item.ref, { category: newName })));
+      } else {
+        saveAll();
+      }
       renderEverything();
     }
 
-    function deleteCategory(encodedName) {
+    async function deleteCategory(encodedName) {
       const name = decodeURIComponent(encodedName);
       if (appState.categories.length === 1) {
         alert("Keep at least one category.");
@@ -680,16 +816,33 @@
       appState.categories = appState.categories.filter(c => c !== name);
       if (!appState.categories.includes("Other")) appState.categories.push("Other");
       appState.transactions.forEach(t => { if (t.category === name) t.category = "Other"; });
-      saveAll();
+      if (appState.cloudReady) {
+        await saveCategories();
+        const matching = await getDocs(query(transactionsRef(), where("category", "==", name)));
+        await Promise.all(matching.docs.map(item => updateDoc(item.ref, { category: "Other" })));
+      } else {
+        saveAll();
+      }
       renderEverything();
     }
 
-    document.getElementById("deleteAllButton").addEventListener("click", () => {
-      const confirmed = confirm("Red warning: this will permanently clear all transaction history for this account on this device.");
-      if (!confirmed) return;
-      appState.transactions = [];
+    async function saveCategories() {
       saveAll();
-      renderEverything();
+      if (appState.cloudReady) await setDoc(categoriesDoc(), { items: appState.categories }, { merge: true });
+    }
+
+    document.getElementById("deleteAllButton").addEventListener("click", async () => {
+      const locationText = appState.cloudReady ? "from Firebase cloud sync and this device" : "for this account on this device";
+      const confirmed = confirm(`Red warning: this will permanently clear all transaction history ${locationText}.`);
+      if (!confirmed) return;
+      if (appState.cloudReady) {
+        const allTransactions = await getDocs(transactionsRef());
+        await Promise.all(allTransactions.docs.map(item => deleteDoc(item.ref)));
+      } else {
+        appState.transactions = [];
+        saveAll();
+        renderEverything();
+      }
     });
 
     document.getElementById("clearFilters").addEventListener("click", () => {
@@ -710,17 +863,25 @@
     });
 
     document.getElementById("signOutButton").addEventListener("click", () => {
-      if (window.google?.accounts?.id) google.accounts.id.disableAutoSelect();
+      clearCloudListeners();
       localStorage.removeItem("databillz_current_user");
-      location.reload();
+      signOut(auth).finally(() => location.reload());
     });
 
     document.getElementById("guestButton").addEventListener("click", () => {
-      openApp({ name: "Guest User", email: "guest@databillz.local" });
+      openApp({ uid: "guest", name: "Guest User", email: "guest@databillz.local" });
+    });
+
+    document.getElementById("googleSignInButton").addEventListener("click", async () => {
+      try {
+        await signInWithPopup(auth, provider);
+      } catch (error) {
+        alert(`Google sign-in failed: ${error.message}`);
+      }
     });
 
     document.getElementById("syncButton").addEventListener("click", () => {
-      alert("Cloud Sync is ready for Firebase or Google Drive setup. Add your API keys and replace the local save/load methods with cloud reads and writes.");
+      alert(appState.cloudReady ? "Cloud Sync is active. Your records are saved in Firebase Firestore for this Google account." : "Cloud Sync works after signing in with Google.");
     });
 
     function emailExport() {
@@ -777,25 +938,28 @@
       return `${day}, ${dateValue}`;
     }
 
-    function handleCredentialResponse(response) {
-      const data = jwt_decode(response.credential);
-      openApp({ name: data.name, email: data.email });
-    }
-
-    function jwt_decode(token) {
-      const base64Url = token.split(".")[1];
-      const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-      const jsonPayload = decodeURIComponent(atob(base64).split("").map(c => {
-        return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
-      }).join(""));
-      return JSON.parse(jsonPayload);
-    }
-
     function escapeHtml(value) {
       return String(value).replace(/[&<>"']/g, char => ({
         "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
       }[char]));
     }
+
+    window.deleteTransaction = deleteTransaction;
+    window.renameCategory = renameCategory;
+    window.deleteCategory = deleteCategory;
+    window.viewSummary = viewSummary;
+    window.exportPDF = exportPDF;
+    window.exportExcel = exportExcel;
+    window.emailExport = emailExport;
+
+    onAuthStateChanged(auth, firebaseUser => {
+      if (!firebaseUser) return;
+      openApp({
+        uid: firebaseUser.uid,
+        name: firebaseUser.displayName || "Databillz User",
+        email: firebaseUser.email || "No email"
+      });
+    });
 
     if (localStorage.getItem("databillz_theme") === "dark") {
       document.body.classList.add("dark");
@@ -803,7 +967,6 @@
     }
 
     document.getElementById("date").valueAsDate = new Date();
-    if (appState.user) openApp(appState.user);
   </script>
 </body>
 </html>
